@@ -118,6 +118,8 @@ class OOTSkeleton:
         limbList = self.createLimbList()
         for limb in limbList:
             limbPath = os.path.join(folderPath, limb.o2rName())
+            # For windows paths, replace backslashes with forward slashes
+            limbPath = limbPath.replace("\\", "/")
             data.extend(struct.pack("<I", len(limbPath)))
             data.extend(limbPath.encode())
 
@@ -276,6 +278,8 @@ class OOTLimb:
             self.DL.name = shorterSkelName + o2rLimbNames[self.index] + "DL"
 
             dlPath = os.path.join(folderPath, self.DL.name)
+            # For windows paths, replace backslashes with forward slashes
+            dlPath = dlPath.replace("\\", "/")
             data.extend(struct.pack("<I", len(dlPath)))
             data.extend(dlPath.encode())
             data.extend(struct.pack("<I", len(dlPath)))

@@ -2296,6 +2296,8 @@ class GfxList:
         data.extend(struct.pack(">II", 0x33 << 24, 0xBEEFBEEF))
 
         dlPath = os.path.join(folderPath, self.name)
+        # For windows paths, replace backslashes with forward slashes
+        dlPath = dlPath.replace("\\", "/")
         hash = int(crc64(dlPath), 16)
         data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(dlPath.encode("utf-8"))
@@ -3648,6 +3650,8 @@ class SPVertex(GbiMacro):
         data.extend(words[0].to_bytes(4, "big") + words[1].to_bytes(4, "big"))
 
         vertPath = os.path.join(folderPath, self.vertList.name)
+        # For windows paths, replace backslashes with forward slashes
+        vertPath = vertPath.replace("\\", "/")
         hash = int(crc64(vertPath), 16)
         data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(vertPath.encode("utf-8"))
@@ -3701,6 +3705,8 @@ class SPDisplayList(GbiMacro):
         data.extend(gsDma1p(0x31, 0, 0, 0x00))
 
         dlPath = os.path.join(folderPath, self.displayList.name)
+        # For windows paths, replace backslashes with forward slashes
+        dlPath = dlPath.replace("\\", "/")
         hash = int(crc64(dlPath), 16)
         data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(dlPath.encode("utf-8"))
@@ -3725,6 +3731,8 @@ class SPBranchList(GbiMacro):
         data.extend(gsDma1p(0x31, 0, 0, 0x01))
 
         dlPath = os.path.join(folderPath, self.displayList.name)
+        # For windows paths, replace backslashes with forward slashes
+        dlPath = dlPath.replace("\\", "/")
         hash = int(crc64(dlPath), 16)
         data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(dlPath.encode("utf-8"))
@@ -4200,6 +4208,8 @@ class SPBranchLessZraw(GbiMacro):
         print(f"SPBranchLessZraw.toO2R {self.dl.name} TODO! This is not implemented yet!")
 
         # dlPath = os.path.join(folderPath, self.dl.name)
+        # For windows paths, replace backslashes with forward slashes
+        # dlPath = dlPath.replace("\\", "/")
         # hash = int(crc64(dlPath), 16)
         # data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(dlPath.encode("utf-8"))
@@ -4878,6 +4888,8 @@ class DPSetTextureImage(GbiMacro):
         data.extend(gsSetImage(0x20, fmt, siz, self.width, 0))
 
         imagePath = os.path.join(folderPath, self.image.name)
+        # For windows paths, replace backslashes with forward slashes
+        imagePath = imagePath.replace("\\", "/")
         hash = int(crc64(imagePath), 16)
         data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
         # data.extend(imagePath.encode("utf-8"))
