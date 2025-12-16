@@ -11,6 +11,7 @@ from ....game_data import game_data
 from ..properties import OOTSkeletonExportSettings
 from ..utility import ootDuplicateArmatureAndRemoveRotations, getGroupIndices, ootRemoveSkeleton
 from .classes import OOTLimb, OOTSkeleton
+from ...constants import o2rLimbNames
 
 from ....utility import (
     PluginError,
@@ -19,6 +20,7 @@ from ....utility import (
     writeCData,
     toAlnum,
     cleanupDuplicatedObjects,
+    crc64
 )
 
 from ...utility import (
@@ -315,3 +317,118 @@ def ootConvertArmatureToC(
         addIncludeFiles(folderName, path, filename)
         if removeVanillaData:
             ootRemoveSkeleton(path, folderName, skeletonName)
+
+def ootConvertArmatureToO2R(
+    originalArmatureObj: bpy.types.Object,
+    convertTransformMatrix: mathutils.Matrix,
+    DLFormat: DLFormat,
+    savePNG: bool,
+    drawLayer: str,
+    settings: OOTSkeletonExportSettings,
+):
+    if settings.mode != "Generic" and not settings.isCustom:
+        importInfo = game_data.z64.skeleton_dict[settings.mode]
+        skeletonName = importInfo.skeletonName
+        filename = skeletonName
+        folderName = importInfo.folderName
+        overlayName = importInfo.actorOverlayName
+        flipbookUses2DArray = importInfo.flipbookArrayIndex2D is not None
+        flipbookArrayIndex2D = importInfo.flipbookArrayIndex2D
+        isLink = importInfo.isLink
+    else:
+        skeletonName = toAlnum(originalArmatureObj.name)
+        filename = settings.filename if settings.isCustomFilename else skeletonName
+        folderName = settings.folder
+        overlayName = settings.actorOverlayName if not settings.isCustom else None
+        flipbookUses2DArray = settings.flipbookUses2DArray
+        flipbookArrayIndex2D = settings.flipbookArrayIndex2D if flipbookUses2DArray else None
+        isLink = False
+
+    exportPath = bpy.path.abspath(settings.customPath)
+    isCustomExport = settings.isCustom
+    removeVanillaData = settings.removeVanillaData
+    optimize = settings.optimize
+
+    fModel = OOTModel(skeletonName, DLFormat, drawLayer)
+    skeleton, fModel = ootConvertArmatureToSkeletonWithMesh(
+        originalArmatureObj, convertTransformMatrix, fModel, skeletonName, not savePNG, drawLayer, optimize
+    )
+
+    if originalArmatureObj.ootSkeleton.LOD is not None:
+        lodSkeleton, fModel = ootConvertArmatureToSkeletonWithMesh(
+            originalArmatureObj.ootSkeleton.LOD,
+            convertTransformMatrix,
+            fModel,
+            skeletonName + "_lod",
+            not savePNG,
+            drawLayer,
+            optimize,
+        )
+    else:
+        lodSkeleton = None
+
+    limbList = skeleton.createLimbList()
+
+    if lodSkeleton is not None:
+        skeleton.hasLOD = True
+        lodLimbList = lodSkeleton.createLimbList()
+
+        if len(limbList) != len(lodLimbList):
+            raise PluginError(
+                originalArmatureObj.name
+                + " cannot use "
+                + originalArmatureObj.ootSkeleton.LOD.name
+                + "as LOD because they do not have the same bone structure."
+            )
+
+        for i in range(len(limbList)):
+            limbList[i].lodDL = lodLimbList[i].DL
+            limbList[i].isFlex |= lodLimbList[i].isFlex
+
+    folderPath = os.path.join("objects", folderName)
+    exportFolderPath = os.path.join(exportPath, folderPath)
+    if not os.path.exists(exportFolderPath):
+        os.makedirs(exportFolderPath)
+
+    # dict[Union[FImageKey, FPaletteKey], FImage]
+    for _, fImage in fModel.textures.items():
+        with open(os.path.join(exportFolderPath, fImage.name), "wb") as f:
+            f.write(fImage.toO2R(folderPath))
+
+    # dict[Tuple[bpy.types.Material, str, FAreaData], Tuple[FMaterial, Tuple[int, int]]]
+    for _, (fMaterial, _) in fModel.materials.items():
+        if fMaterial.material is not None:
+            with open(os.path.join(exportFolderPath, fMaterial.material.name), "wb") as f:
+                f.write(fMaterial.material.toO2R(folderPath))
+
+        if fMaterial.revert is not None:
+            with open(os.path.join(exportFolderPath, fMaterial.revert.name), "wb") as f:
+                f.write(fMaterial.revert.toO2R(folderPath))
+
+    # dict[str, FMesh]
+    for name, mesh in fModel.meshes.items():
+        if mesh.draw is not None:
+            meshName = mesh.name
+            with open(os.path.join(exportFolderPath, meshName), "wb") as f:
+                f.write(mesh.draw.toO2R(folderPath))
+
+            for triGroup in mesh.triangleGroups:
+                if triGroup.triList is not None:
+                    with open(os.path.join(exportFolderPath, triGroup.triList.name), "wb") as f:
+                        f.write(triGroup.triList.toO2R(folderPath))
+
+                if triGroup.vertexList is not None:
+                    vertexListName = triGroup.vertexList.name
+                    with open(os.path.join(exportFolderPath, vertexListName), "wb") as f:
+                        f.write(triGroup.vertexList.toO2R(folderPath))
+
+    with open(os.path.join(exportFolderPath, filename), "wb") as f:
+        f.write(skeleton.toO2R(folderPath))
+
+    for limb in limbList:
+        with open(os.path.join(exportFolderPath, limb.o2rName()), "wb") as f:
+            f.write(limb.toO2R(folderPath))
+
+        if limb.DL is not None:
+            with open(os.path.join(exportFolderPath, limb.DL.name), "wb") as f:
+                f.write(limb.DL.toO2R(folderPath))

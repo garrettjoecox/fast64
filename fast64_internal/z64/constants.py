@@ -601,3 +601,27 @@ enum_to_halfday_bits = {
     "4-Night": halfday_bits_day4_night,
 }
 halfday_bits_to_enum = {val: key for key, val in enum_to_halfday_bits.items()}
+
+o2rLimbNames = [
+    "Root",
+    "Waist",
+    "LowerRoot",
+    "RightThigh",
+    "RightShin",
+    "RightFoot",
+    "LeftThigh",
+    "LeftShin",
+    "LeftFoot",
+    "UpperRoot",
+    "Head",
+    "Hat",
+    "Collar",
+    "LeftShoulder",
+    "LeftForearm",
+    "LeftHand",
+    "RightShoulder",
+    "RightForearm",
+    "RightHand",
+    "Sheath",
+    "Torso"
+]
