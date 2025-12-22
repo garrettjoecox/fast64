@@ -4885,14 +4885,19 @@ class DPSetTextureImage(GbiMacro):
         fmt = f3d.G_IM_FMT_VARS[self.fmt]
         siz = f3d.G_IM_SIZ_VARS[self.siz]
 
-        data.extend(gsSetImage(0x20, fmt, siz, self.width, 0))
+        # If name matches 0x0(\d)000000 then it's a raw data pointer
+        if re.match(r"^0x0(\d)000000$", self.image.name):
+            imagePtr = int(self.image.name, 16) + 1
+            data.extend(gsSetImage(f3d.G_SETTIMG, fmt, siz, self.width, imagePtr))
+        else:
+            data.extend(gsSetImage(0x20, fmt, siz, self.width, 0))
 
-        imagePath = os.path.join(folderPath, self.image.name)
-        # For windows paths, replace backslashes with forward slashes
-        imagePath = imagePath.replace("\\", "/")
-        hash = int(crc64(imagePath), 16)
-        data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
-        # data.extend(imagePath.encode("utf-8"))
+            imagePath = os.path.join(folderPath, self.image.name)
+            # For windows paths, replace backslashes with forward slashes
+            imagePath = imagePath.replace("\\", "/")
+            hash = int(crc64(imagePath), 16)
+            data.extend(struct.pack(">II", hash >> 32, hash & 0xFFFFFFFF))
+            # data.extend(imagePath.encode("utf-8"))
 
         return data
 
