@@ -199,7 +199,7 @@ class SceneInfos:
             skybox_texture_id = Utility.getPropValue(props, "skybox_texture_id")
 
         return SceneInfos(
-            Utility.getPropValue(props, "globalObject", "globalObjectCustom", enum_key="global_object"),
+            Utility.getPropValue(props, "globalObject", enum_key="global_object"),
             Utility.getPropValue(props, "naviCup") if game_data.z64.is_oot() else "NAVI_QUEST_HINTS_NONE",
             Utility.getPropValue(props.sceneTableEntry, "drawConfig", enum_key="draw_config"),
             props.appendNullEntrance,

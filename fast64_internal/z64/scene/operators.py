@@ -213,7 +213,8 @@ class OOT_ExportScene(Operator):
                 bootOptions if hackerFeaturesEnabled else None,
             )
 
-            SceneExport.export(
+            # SceneExport.export(
+            SceneExport.export_o2r(
                 obj,
                 finalTransform,
                 exportInfo,

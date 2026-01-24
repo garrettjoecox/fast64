@@ -69,6 +69,21 @@ class SurfaceType:
                 + ")"
             )
 
+    def getSurfaceType0Binary(self):
+        """Returns surface type properties for the first element of the data array in binary format"""
+
+        value = (
+            (self.isHorseBlocked & 1) << 31
+            | (self.isSoft & 1) << 30
+            | (int(self.floorProperty, 0) & 0x0F) << 26
+            | (int(self.wallType, 0) & 0x1F) << 21
+            | (self.unk18 & 0x07) << 18
+            | (int(self.floorType, 0) & 0x1F) << 13
+            | (self.exitIndex & 0x1F) << 8
+            | (self.bgCamIndex & 0xFF)
+        )
+        return value
+
     def getSurfaceType1(self):
         """Returns surface type properties for the second element of the data array"""
 
@@ -97,6 +112,21 @@ class SurfaceType:
                 )
                 + ")"
             )
+
+    def getSurfaceType1Binary(self):
+        """Returns surface type properties for the second element of the data array in binary format"""
+
+        value = (
+            (self.isWallDamage & 1) << 27
+            | (self.conveyorDirection & 0x3F) << 21
+            | (self.conveyorSpeed & 0x07) << 18
+            | (self.canHookshot & 1) << 17
+            | (self.echo & 0x3F) << 11
+            | (self.lightSetting & 0x1F) << 6
+            | (int(self.floorEffect, 0) & 0x03) << 4
+            | (int(self.material, 0) & 0x0F)
+        )
+        return value
 
     def getEntryC(self):
         """Returns an entry for the surface type array"""
