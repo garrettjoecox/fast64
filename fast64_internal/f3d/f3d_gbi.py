@@ -4620,7 +4620,16 @@ class SPSetOtherMode(GbiMacro):
     def to_binary(self, f3d, segments):
         data = 0
         for flag in self.flagList:
-            data |= getattr(f3d, str(flag), flag)
+            # flag may be an int, a name (str), or a RendermodeBlender instance
+            if isinstance(flag, RendermodeBlender):
+                value = flag.to_binary(f3d)
+            elif isinstance(flag, str):
+                value = getattr(f3d, flag, None)
+                if value is None:
+                    raise ValueError(f"Flag {flag} not found in {f3d}")
+            else:
+                value = flag
+            data |= value
         cmd = getattr(f3d, str(self.cmd), self.cmd)
         sft = getattr(f3d, str(self.sft), self.sft)
         return gsSPSetOtherMode(cmd, sft, self.length, data, f3d)

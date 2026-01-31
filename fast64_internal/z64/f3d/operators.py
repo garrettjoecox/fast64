@@ -100,6 +100,78 @@ def ootConvertMeshToC(
             sourcePath = os.path.join(path, folderName + ".c")
             removeDL(sourcePath, headerPath, name)
 
+def ootConvertMeshToO2R(
+    originalObj: bpy.types.Object,
+    finalTransform: mathutils.Matrix,
+    DLFormat: DLFormat,
+    saveTextures: bool,
+    settings: OOTDLExportSettings,
+):
+    folderName = settings.folder
+    exportPath = bpy.path.abspath(settings.customPath)
+    isCustomExport = settings.isCustom
+    drawLayer = settings.drawLayer
+    removeVanillaData = settings.removeVanillaData
+    name = toAlnum(originalObj.name)
+    overlayName = settings.actorOverlayName
+    flipbookUses2DArray = settings.flipbookUses2DArray
+    flipbookArrayIndex2D = settings.flipbookArrayIndex2D if flipbookUses2DArray else None
+
+    try:
+        obj, allObjs = ootDuplicateHierarchy(originalObj, None, False, OOTObjectCategorizer())
+
+        fModel = OOTModel(name, DLFormat, drawLayer)
+        triConverterInfo = TriangleConverterInfo(obj, None, fModel.f3d, finalTransform, getInfoDict(obj))
+        fMeshes = saveStaticModel(
+            triConverterInfo, fModel, obj, finalTransform, fModel.name, not saveTextures, False, "oot"
+        )
+
+        # Since we provide a draw layer override, there should only be one fMesh.
+        for drawLayer, fMesh in fMeshes.items():
+            fMesh.draw.name = name
+
+        ootCleanupScene(originalObj, allObjs)
+
+    except Exception as e:
+        ootCleanupScene(originalObj, allObjs)
+        raise Exception(str(e))
+
+    folderPath = os.path.join("objects", folderName)
+    exportFolderPath = os.path.join(exportPath, folderPath)
+    if not os.path.exists(exportFolderPath):
+        os.makedirs(exportFolderPath)
+
+    # dict[Union[FImageKey, FPaletteKey], FImage]
+    for _, fImage in fModel.textures.items():
+        with open(os.path.join(exportFolderPath, fImage.name), "wb") as f:
+            f.write(fImage.toO2R(folderPath))
+
+    # dict[Tuple[bpy.types.Material, str, FAreaData], Tuple[FMaterial, Tuple[int, int]]]
+    for _, (fMaterial, _) in fModel.materials.items():
+        if fMaterial.material is not None:
+            with open(os.path.join(exportFolderPath, fMaterial.material.name), "wb") as f:
+                f.write(fMaterial.material.toO2R(folderPath))
+
+        if fMaterial.revert is not None:
+            with open(os.path.join(exportFolderPath, fMaterial.revert.name), "wb") as f:
+                f.write(fMaterial.revert.toO2R(folderPath))
+
+    # dict[str, FMesh]
+    for name, mesh in fModel.meshes.items():
+        if mesh.draw is not None:
+            meshName = settings.filename if settings.isCustomFilename else mesh.name
+            with open(os.path.join(exportFolderPath, meshName), "wb") as f:
+                f.write(mesh.draw.toO2R(folderPath))
+
+            for triGroup in mesh.triangleGroups:
+                if triGroup.triList is not None:
+                    with open(os.path.join(exportFolderPath, triGroup.triList.name), "wb") as f:
+                        f.write(triGroup.triList.toO2R(folderPath))
+
+                if triGroup.vertexList is not None:
+                    vertexListName = triGroup.vertexList.name
+                    with open(os.path.join(exportFolderPath, vertexListName), "wb") as f:
+                        f.write(triGroup.vertexList.toO2R(folderPath))
 
 class OOT_ImportDL(Operator):
     # set bl_ properties
@@ -193,7 +265,7 @@ class OOT_ExportDL(Operator):
             saveTextures = context.scene.saveTextures
             exportSettings = context.scene.fast64.oot.DLExportSettings
 
-            ootConvertMeshToC(
+            ootConvertMeshToO2R(
                 obj,
                 finalTransform,
                 DLFormat.Static,
