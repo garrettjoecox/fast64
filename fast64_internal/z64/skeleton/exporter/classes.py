@@ -132,6 +132,12 @@ class OOTDLReference:
 
 
 class OOTLimb:
+    @staticmethod
+    def _o2r_limb_suffix(index: int) -> str:
+        if 0 <= index < len(o2rLimbNames):
+            return o2rLimbNames[index]
+        return f"Limb{index:03}"
+
     def __init__(
         self,
         skeletonName: str,
@@ -198,7 +204,7 @@ class OOTLimb:
         shorterSkelName = self.skeletonName
         if shorterSkelName[-4:] == "Skel":
             shorterSkelName = shorterSkelName[:-4]
-        return shorterSkelName + o2rLimbNames[self.index] + "Limb"
+        return shorterSkelName + self._o2r_limb_suffix(self.index) + "Limb"
 
     def getNumLimbs(self):
         numLimbs = 1
@@ -275,7 +281,7 @@ class OOTLimb:
             shorterSkelName = self.skeletonName
             if shorterSkelName[-4:] == "Skel":
                 shorterSkelName = shorterSkelName[:-4]
-            self.DL.name = shorterSkelName + o2rLimbNames[self.index] + "DL"
+            self.DL.name = shorterSkelName + self._o2r_limb_suffix(self.index) + "DL"
 
             dlPath = os.path.join(folderPath, self.DL.name)
             # For windows paths, replace backslashes with forward slashes
